@@ -1,0 +1,14 @@
+<resources>
+    <string name="app_name">Fan Controller</string>
+    <string name="action_settings">Settings</string>
+    <string name="button_medium_text">MED</string>
+    <string name="button_high_text">HI</string>
+    <string name="button_light_text">LIGHT</string>
+    <string name="button_off_text">OFF</string>
+    <string name="button_low_text">LOW</string>
+    <string name="add_controller_button_desc">Add a fan controller to the spinner</string>
+    <string name="cancel">Cancel</string>
+    <string name="ok">OK</string>
+    <string name="ip_address">IP Address</string>
+    <string name="button_timeout_text">TIMEOUT</string>
+</resources>
