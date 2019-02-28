@@ -34,6 +34,9 @@ ESP8266WebServer server(80);
 void stop_fan() {
   Serial.println("Stopping fan, alarm has gone off");
   radio.send(button_commands[FAN_OFF]);
+
+  // Some versions of RC Switch don't drive the pin LOW making a lot of radio noise.
+  digitalWrite(RADIO_PIN, LOW);
 }
 
 // curl -i -X POST -d '{"command": "off"}' http://192.168.2.65/control
