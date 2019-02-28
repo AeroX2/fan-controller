@@ -89,13 +89,32 @@ class MainActivity : AppCompatActivity() {
     }
 
     private var timeout: TimeoutModel? = null
+    @SuppressLint("SetTextI18n")
     private val openTimepicker = View.OnClickListener { view ->
+        var timeSet = false
         val dialog = TimePickerDialog(this, TimePickerDialog.OnTimeSetListener { _, hour, minute ->
             timeout = TimeoutModel(hour, minute, 0)
+            timeSet = true
+
+            try {
+                val button = view as Button
+                button.text = "%02d:%02d".format(hour, minute)
+            } catch (e: Exception) {
+                Log.e(TAG, e.toString())
+            }
         }, 0, 0, true)
-        dialog.setOnDismissListener(DialogInterface.OnDismissListener {
+        dialog.setOnDismissListener {
+            if (timeSet) return@setOnDismissListener
+
             timeout = null
-        })
+
+            try {
+                val button = view as Button
+                button.text = "TIMEOUT"
+            } catch (e: Exception) {
+                Log.e(TAG, e.toString())
+            }
+        }
         dialog.show();
     }
 
