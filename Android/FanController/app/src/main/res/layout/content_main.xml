@@ -18,7 +18,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content">
 
-        <TableRow
+        <RelativeLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:gravity="center">
@@ -27,39 +27,39 @@
                     android:text="@string/button_medium_text"
                     android:layout_width="45pt"
                     android:layout_height="45pt"
-                    tools:layout_editor_absoluteY="42dp"
-                    tools:layout_editor_absoluteX="147dp"
                     android:id="@+id/medium_button"
-                    android:background="@drawable/btn_rounded_effect_16dp"/>
-        </TableRow>
+                    android:background="@drawable/btn_rounded_effect_16dp" android:layout_centerInParent="true"/>
+        </RelativeLayout>
 
-        <TableRow
+        <RelativeLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:gravity="center">
+                android:gravity="center|end" android:layout_margin="5dp">
 
             <Button
                     android:text="@string/button_high_text"
                     android:layout_width="45pt"
                     android:layout_height="45pt"
-                    tools:layout_editor_absoluteY="102dp"
-                    tools:layout_editor_absoluteX="30dp"
                     android:id="@+id/high_button"
-                    android:background="@drawable/btn_rounded_effect_16dp"/>
+                    android:background="@drawable/btn_rounded_effect_16dp" android:layout_alignParentLeft="true"/>
 
+            <Button
+                    android:id="@+id/light_button"
+                    android:text="@string/button_light_text"
+                    android:layout_width="45pt"
+                    android:layout_height="45pt"
+                    android:background="@drawable/btn_rounded_effect_16dp" android:layout_centerInParent="true"/>
             <Button
                     android:text="@string/button_low_text"
                     android:layout_width="45pt"
                     android:layout_height="45pt"
-                    tools:layout_editor_absoluteY="102dp"
                     android:id="@+id/low_button"
-                    android:layout_marginLeft="145dp"
-                    android:layout_marginStart="145dp"
-                    app:layout_constraintStart_toEndOf="@+id/high_button"
-                    android:background="@drawable/btn_rounded_effect_16dp"/>
-        </TableRow>
+                    android:layout_marginStart="5dp"
+                    android:background="@drawable/btn_rounded_effect_16dp" android:layout_alignParentRight="true"
+                    android:layout_marginEnd="5dp"/>
+        </RelativeLayout>
 
-        <TableRow
+        <RelativeLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:gravity="center">
@@ -69,35 +69,9 @@
                     android:text="@string/button_off_text"
                     android:layout_width="45pt"
                     android:layout_height="45pt"
-                    tools:layout_editor_absoluteY="168dp"
-                    tools:layout_editor_absoluteX="148dp"
-                    android:background="@drawable/btn_rounded_effect_16dp"/>
-        </TableRow>
+                    android:background="@drawable/btn_rounded_effect_16dp" android:layout_centerInParent="true"/>
+        </RelativeLayout>
 
-        <TableRow
-                android:layout_width="match_parent"
-                android:gravity="center"
-                android:layout_height="match_parent">
-
-            <LinearLayout
-                    android:orientation="vertical"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent">
-
-                <Space
-                        android:layout_width="match_parent"
-                        android:layout_height="24dp"/>
-
-                <Button
-                        android:id="@+id/light_button"
-                        android:text="@string/button_light_text"
-                        android:layout_width="45pt"
-                        android:layout_height="45pt"
-                        tools:layout_editor_absoluteY="327dp"
-                        tools:layout_editor_absoluteX="147dp"
-                        android:background="@drawable/btn_rounded_effect_16dp"/>
-            </LinearLayout>
-        </TableRow>
     </TableLayout>
 
     <Button
@@ -120,7 +94,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_weight="1"
-                />
+        />
 
         <ImageButton
                 android:id="@+id/add_controller"
