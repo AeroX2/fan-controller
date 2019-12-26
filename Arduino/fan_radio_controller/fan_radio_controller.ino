@@ -1,4 +1,5 @@
 #include <ESP8266WebServer.h>
+#include <ESP8266mDNS.h>
 #include <ESP8266WiFi.h>
 #include <DNSServer.h>
 #include <WiFiClient.h>
@@ -7,7 +8,6 @@
 #include <RCSwitch.h>
 #include <Time.h>
 #include <TimeAlarms.h>
-
 
 enum Buttons {
   LIGHT,
@@ -33,6 +33,10 @@ ESP8266WebServer server(80);
 
 void stop_fan() {
   Serial.println("Stopping fan, alarm has gone off");
+
+  // Send three times for "safety"
+  radio.send(button_commands[FAN_OFF]);
+  radio.send(button_commands[FAN_OFF]);
   radio.send(button_commands[FAN_OFF]);
 
   // Some versions of RC Switch don't drive the pin LOW making a lot of radio noise.
@@ -40,20 +44,20 @@ void stop_fan() {
 }
 
 // curl -i -X POST -d '{"command": "off"}' http://192.168.2.65/control
+AlarmID_t alarm_id = -1;
 void post_control() {
-  StaticJsonBuffer<512> json_buffer;
+  StaticJsonDocument<512> json_doc;
   String post_body = server.arg("plain");
   Serial.println(post_body);
 
-  JsonObject& json_body = json_buffer.parseObject(server.arg("plain"));
-  
-  if (!json_body.success()) {
+  auto error = deserializeJson(json_doc, server.arg("plain"));
+  if (error) {
       Serial.println("Error parsing JSON body");
       server.send(400);
       return;
   }
 
-  const char* command = json_body["command"];
+  const char* command = json_doc["command"];
   if (command == nullptr) {
       Serial.println("Command not found in JSON body");
       server.send(400);
@@ -78,20 +82,30 @@ void post_control() {
   } else if (strcmp(command, "high") == 0) {
     Serial.println("Turning fan on high");
     radio.send(button_commands[FAN_HIGH]);
+  } else if (strcmp(command, "pause") == 0) {
+    Serial.println("Pausing timer");
+  	if (alarm_id != -1) {
+  	  Alarm.disable(alarm_id);
+  	} 
+  } else if (strcmp(command, "resume") == 0) {
+    Serial.println("Resuming timer");
+    if (alarm_id != -1) {
+      Alarm.enable(alarm_id);
+    }
   }
 
   // Some versions of RC Switch don't drive the pin LOW making a lot of radio noise.
   digitalWrite(RADIO_PIN, LOW);
   
-  if (json_body.containsKey("timeout")) {
-    int hours = json_body["timeout"]["hours"];
-    int minutes = json_body["timeout"]["minutes"];
-    int seconds = json_body["timeout"]["seconds"];
+  if (json_doc.containsKey("timeout")) {
+    int hours = json_doc["timeout"]["hours"];
+    int minutes = json_doc["timeout"]["minutes"];
+    int seconds = json_doc["timeout"]["seconds"];
     
     char format_string[512];
     sprintf(format_string, "Timeout found, setting alarm for %02d:%02d:%02d", hours, minutes, seconds);
     Serial.println(format_string);
-    Alarm.timerOnce(60*60*hours+60*minutes+seconds, stop_fan);
+    alarm_id = Alarm.timerOnce(60*60*hours+60*minutes+seconds, stop_fan);
   }
 }
 
@@ -108,6 +122,9 @@ void setup(void) {
   Serial.print("IP address: ");
   Serial.println(WiFi.localIP());
   
+  if (!MDNS.begin("james_fan_controller")) {
+    Serial.println("Error setting up MDNS responder!");
+  }
   radio.enableTransmit(RADIO_PIN);
   radio.setProtocol(6);
   radio.setPulseLength(350);
@@ -124,5 +141,5 @@ void setup(void) {
 
 void loop(void) {
   server.handleClient();
-  Alarm.delay(100);
+  Alarm.delay(10);
 }
