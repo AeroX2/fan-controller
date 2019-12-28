@@ -38,6 +38,12 @@ app.onSync((body, headers) => {
 				attributes: {
 					availableFanSpeeds: {
 						speeds: [{
+							speed_name: 'off',
+							speed_values: [{
+								speed_synonym: ['off', 'stop', 'nothing'],
+								lang: 'en'
+							}]
+						}, {
 							speed_name: 'low',
 							speed_values: [{
 								speed_synonym: ['low', 'slow'],
