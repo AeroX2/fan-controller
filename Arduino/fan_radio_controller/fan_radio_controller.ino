@@ -1,6 +1,6 @@
 #include <ESP8266WebServer.h>
-#include <ESP8266mDNS.h>
 #include <ESP8266WiFi.h>
+#include <WiFiUdp.h>
 #include <DNSServer.h>
 #include <WiFiClient.h>
 #include <WiFiManager.h>  
@@ -27,6 +27,11 @@ const char* button_commands[] = {
   PRE "101111",
   PRE "011111"
 };
+
+#define DISCOVERY_PORT_IN  3311
+#define DISCOVERY_PORT_OUT 3312
+char incoming_packet[256];
+WiFiUDP Udp;
 
 RCSwitch radio = RCSwitch();
 ESP8266WebServer server(80);
@@ -70,6 +75,8 @@ void post_control() {
   if (strcmp(command, "light") == 0) {
     Serial.println("Turning on the light");
     radio.send(button_commands[LIGHT]);
+    radio.send(button_commands[LIGHT]);
+    radio.send(button_commands[LIGHT]);
   } else if (strcmp(command, "off") == 0) {
     Serial.println("Turning fan off");
     radio.send(button_commands[FAN_OFF]);
@@ -109,10 +116,33 @@ void post_control() {
   }
 }
 
+void process_discovery_packets() {
+  int packetSize = Udp.parsePacket();
+  if (packetSize) {
+    // Receive incoming UDP packets
+    Serial.printf("Received %d bytes from %s, port %d\n", packetSize, Udp.remoteIP().toString().c_str(), Udp.remotePort());
+    int len = Udp.read(incoming_packet, 255);
+    if (len > 0) {
+      incoming_packet[len] = 0;
+    }
+    Serial.printf("UDP packet contents: %s\n", incoming_packet);
+
+    if (memcmp(incoming_packet, "\xA5\xA5\xA5\xA5", 4) != 0) {
+      Serial.println("Unknown UDP discovery packet data receivied");
+      return;
+    }
+
+    // Send back a reply, to the IP address and port we got the packet from
+    Udp.beginPacket(Udp.remoteIP(), DISCOVERY_PORT_OUT);
+    Udp.write("james_fan_controller");
+    Udp.endPacket();
+  }
+}
+
 void setup(void) {
   Serial.begin(115200);
   
-  WiFi.hostname("james_fan_controller");
+  // WiFi.hostname("");
   WiFiManager wifiManager;
   wifiManager.autoConnect();
   
@@ -122,9 +152,9 @@ void setup(void) {
   Serial.print("IP address: ");
   Serial.println(WiFi.localIP());
   
-  if (!MDNS.begin("james_fan_controller")) {
-    Serial.println("Error setting up MDNS responder!");
-  }
+  Udp.begin(DISCOVERY_PORT_IN);
+  Serial.printf("UDP Discovery Started on: %d\n", DISCOVERY_PORT_IN);
+  
   radio.enableTransmit(RADIO_PIN);
   radio.setProtocol(6);
   radio.setPulseLength(350);
@@ -136,10 +166,11 @@ void setup(void) {
   server.on("/control", HTTP_POST, post_control);
 
   server.begin();
-  Serial.println("HTTP server started");
+  Serial.printf("HTTP server started on: %d\n", 80);
 }
 
 void loop(void) {
+  process_discovery_packets();
   server.handleClient();
   Alarm.delay(10);
 }
