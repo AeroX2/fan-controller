@@ -105,9 +105,16 @@ void post_control() {
   digitalWrite(RADIO_PIN, LOW);
   
   if (json_doc.containsKey("timeout")) {
-    int hours = json_doc["timeout"]["hours"];
-    int minutes = json_doc["timeout"]["minutes"];
-    int seconds = json_doc["timeout"]["seconds"];
+    long hours = 0;
+    long minutes = 0;
+    long seconds = 0;
+    if (json_doc["timeout"].is<long>()) {
+      seconds = json_doc["timeout"];
+    } else {
+      hours = json_doc["timeout"]["hours"];
+      minutes = json_doc["timeout"]["minutes"];
+      seconds = json_doc["timeout"]["seconds"];
+    }
     
     char format_string[512];
     sprintf(format_string, "Timeout found, setting alarm for %02d:%02d:%02d", hours, minutes, seconds);
