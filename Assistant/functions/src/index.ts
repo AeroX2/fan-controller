@@ -5,12 +5,9 @@ import "ts-polyfill/lib/es2019-array";
 const config = functions.config();
 const devices = Object.entries(config).flatMap(([deviceId, deviceConf]: [string, any]) => {
 	const channels = deviceConf.channel ? deviceConf.channel.split(",") : ["1"];
-	const proxy = channels.length > 1 ? deviceId : undefined;
 	return channels.map((c: string) => ({
-		id: proxy ? `${deviceId}-${c}` : deviceId,
-		name: `${deviceId} #${c}`,
-		channel: parseInt(c, 10),
-		proxy,
+		id: `${deviceId}`,
+		name: "Fan Controller",
 	}));
 });
 
@@ -41,19 +38,19 @@ app.onSync((body, headers) => {
 				attributes: {
 					availableFanSpeeds: {
 						speeds: [{
-							speed_name: 'Low',
+							speed_name: 'low',
 							speed_values: [{
 								speed_synonym: ['low', 'slow'],
 								lang: 'en'
 							}]
 						}, {
-							speed_name: 'Medium',
+							speed_name: 'medium',
 							speed_values: [{
 								speed_synonym: ['medium', 'half', 'half-speed', 'half speed'],
 								lang: 'en'
 							}]
 						}, {
-							speed_name: 'High',
+							speed_name: 'high',
 							speed_values: [{
 								speed_synonym: ['high', 'fast', 'full'],
 								lang: 'en'
@@ -64,11 +61,6 @@ app.onSync((body, headers) => {
 					reversible: false,
 					maxTimerLimitSec: 36000,
 					commandOnlyTimer: true
-				},
-				customData: {
-					channel: device.channel,
-					port: device.port,
-					proxy: device.proxy,
 				},
 			})),
 		},

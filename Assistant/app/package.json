@@ -1,7 +1,7 @@
 {
-  "name": "local-home-sdk-sample",
-  "version": "0.0.1",
-  "description": "Sample for the Local Home SDK.",
+  "name": "fancontroller_assistant_app",
+  "version": "1.0.0",
+  "description": "Local Execution Code for Fan Controller",
   "private": true,
   "dependencies": {
     "@google/local-home-sdk": "^0.2.1",
@@ -26,7 +26,7 @@
     "lint": "tslint --project .",
     "compile": "tsc --noEmit",
     "test": "c8 ava",
-    "start": "webpack-dev-server",
+    "start": "webpack-dev-server --host 0.0.0.0",
     "deploy": "firebase deploy --only hosting"
   },
   "ava": {
