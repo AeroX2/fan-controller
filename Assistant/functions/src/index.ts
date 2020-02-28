@@ -23,7 +23,7 @@ app.onSync((body, headers) => {
 				traits: [
 					"action.devices.traits.FanSpeed",
 					"action.devices.traits.Timer",
-					"action.devices.traits.OnOff"
+					"action.devices.traits.Toggles"
 				],
 				id: device.id,
 				otherDeviceIds: [{
@@ -66,7 +66,15 @@ app.onSync((body, headers) => {
 					},
 					reversible: false,
 					maxTimerLimitSec: 36000,
-					commandOnlyTimer: true
+					commandOnlyTimer: true,
+					availableToggles: [{
+						name: "light",
+						name_values: [{
+							name_synonym: ['light'],
+							lang: 'en'  
+						}]
+					}],
+					commandOnlyToggles: true,
 				},
 			})),
 		},

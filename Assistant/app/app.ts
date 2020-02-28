@@ -53,12 +53,12 @@ export class HomeApp {
 		switch (execution.command) {
 			case "action.devices.commands.SetFanSpeed":
 				const fanState = params.fanSpeed;
-				if (["low", "medium", "high"].indexOf(fanState) === -1) {
+				if (["off", "low", "medium", "high"].indexOf(fanState) === -1) {
 					throw Error(`Unrecognised fan state: ${fanState}`);
 				}
 				postData.command = fanState;
 				break
-			case "action.devices.commands.OnOff":
+			case "action.devices.commands.SetToggles":
 				postData.command = "light"
 				break
 			case "action.devices.commands.TimerStart":
@@ -100,10 +100,12 @@ export class HomeApp {
 			try {
 				const result = await this.app.getDeviceManager().send(httpRequest);
 				const state = {
+					...params,
 					online: true
 				};
 				executeResponse.setSuccessState(result.deviceId, state);
 			} catch (e) {
+				console.debug("Error: ", e);
 				executeResponse.setErrorState(device.id, e.errorCode);
 			}
 		}));
