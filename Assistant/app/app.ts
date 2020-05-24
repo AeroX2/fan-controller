@@ -37,77 +37,94 @@ export class HomeApp {
 		console.log("IDENTIFY response", identifyResponse);
 		return identifyResponse;
 	}
+	
+	const executeHandler = (request: IntentFlow.ExecuteRequest): Promise<IntentFlow.ExecuteResponse> => {
 
-	// executeHandler send openpixelcontrol messages corresponding to light device commands.
-	public executeHandler = async (executeRequest: smarthome.IntentFlow.ExecuteRequest): Promise<smarthome.IntentFlow.ExecuteResponse> => {
-		console.log("EXECUTE request:", executeRequest);
-		// TODO(proppy): handle multiple inputs/commands.
-		const command = executeRequest.inputs[0].payload.commands[0];
-		// TODO(proppy): handle multiple executions.
+		// Extract command(s) and device target(s) from request
+		const command = request.inputs[0].payload.commands[0];
 		const execution = command.execution[0];
-		const params = execution.params as any;
 
-		let postData = {
-			command: ""
-		} as any;
-		switch (execution.command) {
-			case "action.devices.commands.SetFanSpeed":
-				const fanState = params.fanSpeed;
-				if (["off", "low", "medium", "high"].indexOf(fanState) === -1) {
-					throw Error(`Unrecognised fan state: ${fanState}`);
-				}
-				postData.command = fanState;
-				break
-			case "action.devices.commands.SetToggles":
-				postData.command = "light"
-				break
-			case "action.devices.commands.TimerStart":
-				postData.timeout = parseInt(params.timerTimeSec);
-				break
-			case "action.devices.commands.TimerAdjust":
-				postData.timeout = parseInt(params.timerTimeSec);
-				break
-			case "action.devices.commands.TimerPause":
-				postData.command = "pause"
-				break
-			case "action.devices.commands.TimerResume":
-				postData.command = "resume"
-				break
-			case "action.devices.commands.TimerCancel":
-				postData.command = "pause"
-				break
-			default:
-				throw Error(`Unsupported command: ${execution.command}`);
-		}
+		const response = new Execute.Response.Builder()
+		  .setRequestId(request.requestId);
 
-		// Create execution response to capture individual command
-		// success/failure for each devices.
-		const executeResponse = new smarthome.Execute.Response.Builder()
-			.setRequestId(executeRequest.requestId);
-		// Handle light device commands for all devices.
-		await Promise.all(command.devices.map(async (device: any) => {
-			// Create HTTP Command
-			const httpRequest = new smarthome.DataFlow.HttpRequestData();
-			httpRequest.requestId = executeRequest.requestId;
-			httpRequest.deviceId = device.id;
-			httpRequest.method = smarthome.Constants.HttpOperation.POST;
-			httpRequest.port = 80;
-			httpRequest.path = '/control';
-			httpRequest.dataType = 'application/json';
-			httpRequest.data = JSON.stringify(postData);
-
-			console.debug("HttpRequestData:", httpRequest);
-			try {
-				const result = await this.app.getDeviceManager().send(httpRequest);
-				executeResponse.setSuccessState(result.deviceId, state);
-			} catch (e) {
-				console.debug("Error: ", e);
-				executeResponse.setErrorState(device.id, e.errorCode);
+		const result = command.devices.map((device) => {
+			let postData = {
+				command: ""
+			} as any;
+			switch (execution.command) {
+				case "action.devices.commands.SetFanSpeed":
+					if (device.id === 'james_light_controller') console.error("Wrong command for device id", execution.command)
+				
+					const fanState = params.fanSpeed;
+					if (["off", "low", "medium", "high"].indexOf(fanState) === -1) {
+						throw Error(`Unrecognised fan state: ${fanState}`);
+					}
+					postData.command = fanState;
+					break
+				case "action.devices.commands.SetToggles":
+					postData.command = "light"
+					break
+				case "action.devices.commands.TimerStart":
+					if (device.id === 'james_light_controller') console.error("Wrong command for device id", execution.command)
+				
+					postData.timeout = parseInt(params.timerTimeSec);
+					break
+				case "action.devices.commands.TimerAdjust":
+					if (device.id === 'james_light_controller') console.error("Wrong command for device id", execution.command)
+				
+					postData.timeout = parseInt(params.timerTimeSec);
+					break
+				case "action.devices.commands.TimerPause":
+					if (device.id === 'james_light_controller') console.error("Wrong command for device id", execution.command)
+				
+					postData.command = "pause"
+					break
+				case "action.devices.commands.TimerResume":
+					if (device.id === 'james_light_controller') console.error("Wrong command for device id", execution.command)
+				
+					postData.command = "resume"
+					break
+				case "action.devices.commands.TimerCancel":
+					if (device.id === 'james_light_controller') console.error("Wrong command for device id", execution.command)
+				
+					postData.command = "pause"
+					break
+				default:
+					throw Error(`Unsupported command: ${execution.command}`);
 			}
-		}));
 
-		console.log("EXECUTE response", executeResponse);
-		// Return execution response to smarthome infrastructure.
-		return executeResponse.build();
+			// Create execution response to capture individual command
+			// success/failure for each devices.
+			const executeResponse = new smarthome.Execute.Response.Builder()
+				.setRequestId(executeRequest.requestId);
+				
+				// Create HTTP Command
+				const deviceCommand = new smarthome.DataFlow.HttpRequestData();
+				deviceCommand.requestId = executeRequest.requestId;
+				deviceCommand.deviceId = device.id;
+				deviceCommand.method = smarthome.Constants.HttpOperation.POST;
+				deviceCommand.port = 80;
+				deviceCommand.path = '/control';
+				deviceCommand.dataType = 'application/json';
+				deviceCommand.data = JSON.stringify(postData);
+
+				console.debug("HttpRequestData:", deviceCommand);
+
+			// Send command to the local device
+			return localHomeApp.getDeviceManager()
+				.send(deviceCommand)
+				.then((result) => {
+				  response.setSuccessState(result.deviceId, state);
+				})
+				.catch((err: IntentFlow.HandlerError) => {
+				  err.errorCode = err.errorCode || IntentFlow.ErrorCode.INVALID_REQUEST;
+				  response.setErrorState(device.id, err.errorCode);
+				});
+		});
+
+		// Respond once all commands complete
+		return Promise.all(result)
+		  .then(() => response.build());
+		};
 	}
 }
