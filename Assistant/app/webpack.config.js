@@ -11,37 +11,37 @@
  * limitations under the License.
  */
 
-const path = require('path')
-const HtmlWebpackPlugin = require('html-webpack-plugin')
+const path = require("path");
+const HtmlWebpackPlugin = require("html-webpack-plugin");
 
 module.exports = {
-  mode: 'development',
-  entry: './index.ts',
-  output: {
-    path: path.resolve(__dirname, 'dist'),
-    filename: 'bundle.js'
-  },
-  devtool: 'inline-source-map',
-  devServer: {
-    contentBase: './dist',
-    inline: false
-  },
-  module: {
-    rules: [
-      {
-        test: /\.ts$/,
-        loader: 'ts-loader'
-      }
+    mode: "development",
+    entry: "./index.ts",
+    output: {
+        path: path.resolve(__dirname, "dist"),
+        filename: "bundle.js"
+    },
+    devtool: "inline-source-map",
+    devServer: {
+        contentBase: "./dist",
+        inline: false
+    },
+    module: {
+        rules: [
+            {
+                test: /\.ts$/,
+                loader: "ts-loader"
+            }
+        ]
+    },
+    resolve: {
+        modules: ["node_modules"],
+        extensions: [ ".ts", ".js" ]
+    },
+    plugins: [
+        new HtmlWebpackPlugin({
+            template: "index.html",
+            inject: "head"
+        })
     ]
-  },
-  resolve: {
-    modules: ['node_modules'],
-    extensions: [ '.ts', '.js' ]
-  },
-  plugins: [
-    new HtmlWebpackPlugin({
-      template: 'index.html',
-      inject: 'head'
-    })
-  ]
-}
+};

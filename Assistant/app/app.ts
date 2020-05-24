@@ -2,129 +2,145 @@
 
 // HomeApp implements IDENTIFY and EXECUTE handler for smarthome local device execution.
 export class HomeApp {
-	constructor(private readonly app: smarthome.App) {
-		this.app = app;
-	}
+    constructor(private readonly app: smarthome.App) {
+        this.app = app;
+    }
 
-	public identifyHandler = async (identifyRequest: smarthome.IntentFlow.IdentifyRequest):	Promise<smarthome.IntentFlow.IdentifyResponse> => {
-		console.log("IDENTIFY request", identifyRequest);
+    public identifyHandler = async (identifyRequest: smarthome.IntentFlow.IdentifyRequest):	
+    Promise<smarthome.IntentFlow.IdentifyResponse> => {
 
-		const device = identifyRequest.inputs[0].payload.device;
-		if (device === undefined) {
-			throw Error(`device is undefined: ${identifyRequest}`);
-		}
-		if (device.udpScanData === undefined) {
-			throw Error(`identify request is missing discovery response: ${identifyRequest}`);
-		}
+        console.log("IDENTIFY request", identifyRequest);
 
-		// Raw discovery data are encoded as 'hex'.
-		const udpScanData = Buffer.from(device.udpScanData.data, "hex");
-		console.debug("udpScanData:", udpScanData);
-		// Device encoded discovery payload in CBOR.
-		const discoveryId = udpScanData.toString();
-		console.debug("discoveryData:", discoveryId);
+        const device = identifyRequest.inputs[0].payload.device;
+        if (device === undefined) {
+            throw Error(`device is undefined: ${identifyRequest}`);
+        }
+        if (device.udpScanData === undefined) {
+            throw Error(`identify request is missing discovery response: ${identifyRequest}`);
+        }
 
-		const identifyResponse: smarthome.IntentFlow.IdentifyResponse = {
-			intent: smarthome.Intents.IDENTIFY,
-			requestId: identifyRequest.requestId,
-			payload: {
-				device: {
-					id: device.id || "deviceId", 
-					verificationId: discoveryId 
-				},
-			},
-		};
-		console.log("IDENTIFY response", identifyResponse);
-		return identifyResponse;
-	}
-	
-	const executeHandler = (request: IntentFlow.ExecuteRequest): Promise<IntentFlow.ExecuteResponse> => {
+        // Raw discovery data are encoded as 'hex'.
+        const udpScanData = Buffer.from(device.udpScanData.data, "hex");
+        console.debug("udpScanData:", udpScanData);
+        // Device encoded discovery payload in CBOR.
+        const discoveryId = udpScanData.toString();
+        console.debug("discoveryData:", discoveryId);
 
-		// Extract command(s) and device target(s) from request
-		const command = request.inputs[0].payload.commands[0];
-		const execution = command.execution[0];
+        const identifyResponse: smarthome.IntentFlow.IdentifyResponse = {
+            intent: smarthome.Intents.IDENTIFY,
+            requestId: identifyRequest.requestId,
+            payload: {
+                device: {
+                    id: device.id || "deviceId", 
+                    verificationId: discoveryId 
+                },
+            },
+        };
+        console.log("IDENTIFY response", identifyResponse);
+        return identifyResponse;
+    }
 
-		const response = new Execute.Response.Builder()
-		  .setRequestId(request.requestId);
+    public executeHandler = (request: smarthome.IntentFlow.ExecuteRequest): 
+        Promise<smarthome.IntentFlow.ExecuteResponse> => {
 
-		const result = command.devices.map((device) => {
-			let postData = {
-				command: ""
-			} as any;
-			switch (execution.command) {
-				case "action.devices.commands.SetFanSpeed":
-					if (device.id === 'james_light_controller') console.error("Wrong command for device id", execution.command)
-				
-					const fanState = params.fanSpeed;
-					if (["off", "low", "medium", "high"].indexOf(fanState) === -1) {
-						throw Error(`Unrecognised fan state: ${fanState}`);
-					}
-					postData.command = fanState;
-					break
-				case "action.devices.commands.SetToggles":
-					postData.command = "light"
-					break
-				case "action.devices.commands.TimerStart":
-					if (device.id === 'james_light_controller') console.error("Wrong command for device id", execution.command)
-				
-					postData.timeout = parseInt(params.timerTimeSec);
-					break
-				case "action.devices.commands.TimerAdjust":
-					if (device.id === 'james_light_controller') console.error("Wrong command for device id", execution.command)
-				
-					postData.timeout = parseInt(params.timerTimeSec);
-					break
-				case "action.devices.commands.TimerPause":
-					if (device.id === 'james_light_controller') console.error("Wrong command for device id", execution.command)
-				
-					postData.command = "pause"
-					break
-				case "action.devices.commands.TimerResume":
-					if (device.id === 'james_light_controller') console.error("Wrong command for device id", execution.command)
-				
-					postData.command = "resume"
-					break
-				case "action.devices.commands.TimerCancel":
-					if (device.id === 'james_light_controller') console.error("Wrong command for device id", execution.command)
-				
-					postData.command = "pause"
-					break
-				default:
-					throw Error(`Unsupported command: ${execution.command}`);
-			}
+        // Extract command(s) and device target(s) from request
+        const command = request.inputs[0].payload.commands[0];
+        const execution = command.execution[0];
+        const params = execution.params as {
+            fanState: string,
+            timerTimeSec: string,
+        };
 
-			// Create execution response to capture individual command
-			// success/failure for each devices.
-			const executeResponse = new smarthome.Execute.Response.Builder()
-				.setRequestId(executeRequest.requestId);
-				
-				// Create HTTP Command
-				const deviceCommand = new smarthome.DataFlow.HttpRequestData();
-				deviceCommand.requestId = executeRequest.requestId;
-				deviceCommand.deviceId = device.id;
-				deviceCommand.method = smarthome.Constants.HttpOperation.POST;
-				deviceCommand.port = 80;
-				deviceCommand.path = '/control';
-				deviceCommand.dataType = 'application/json';
-				deviceCommand.data = JSON.stringify(postData);
+        const response = new smarthome.Execute.Response.Builder()
+            .setRequestId(request.requestId);
 
-				console.debug("HttpRequestData:", deviceCommand);
+        const result = command.devices.map((device: smarthome.IntentFlow.DeviceMetadata) => {
+            const postData = {
+                command: "",
+            } as {
+                command: string,
+                timeout: number|undefined
+            };
 
-			// Send command to the local device
-			return localHomeApp.getDeviceManager()
-				.send(deviceCommand)
-				.then((result) => {
-				  response.setSuccessState(result.deviceId, state);
-				})
-				.catch((err: IntentFlow.HandlerError) => {
-				  err.errorCode = err.errorCode || IntentFlow.ErrorCode.INVALID_REQUEST;
-				  response.setErrorState(device.id, err.errorCode);
-				});
-		});
+            switch (execution.command) {
+            case "action.devices.commands.SetFanSpeed":
+                if (device.id === "james_light_controller") {
+                    console.error("Wrong command for device id", execution.command);
+                }
 
-		// Respond once all commands complete
-		return Promise.all(result)
-		  .then(() => response.build());
-		};
-	}
+                if (["off", "low", "medium", "high"].indexOf(params.fanState) === -1) {
+                    throw Error(`Unrecognised fan state: ${params.fanState}`);
+                }
+                postData.command = params.fanState;
+                break;
+            case "action.devices.commands.SetToggles":
+                postData.command = "light";
+                break;
+            case "action.devices.commands.TimerStart":
+                if (device.id === "james_light_controller") {
+                    console.error("Wrong command for device id", execution.command);
+                }
+
+                postData.timeout = parseInt(params.timerTimeSec);
+                break;
+            case "action.devices.commands.TimerAdjust":
+                if (device.id === "james_light_controller") {
+                    console.error("Wrong command for device id", execution.command);
+                }
+
+                postData.timeout = parseInt(params.timerTimeSec);
+                break;
+            case "action.devices.commands.TimerPause":
+                if (device.id === "james_light_controller") {
+                    console.error("Wrong command for device id", execution.command);
+                }
+
+                postData.command = "pause";
+                break;
+            case "action.devices.commands.TimerResume":
+                if (device.id === "james_light_controller") {
+                    console.error("Wrong command for device id", execution.command);
+                }
+
+                postData.command = "resume";
+                break;
+            case "action.devices.commands.TimerCancel":
+                if (device.id === "james_light_controller") {
+                    console.error("Wrong command for device id", execution.command);
+                }
+
+                postData.command = "pause";
+                break;
+            default:
+                throw Error(`Unsupported command: ${execution.command}`);
+            }
+
+            // Create HTTP Command
+            const deviceCommand = new smarthome.DataFlow.HttpRequestData();
+            deviceCommand.requestId = request.requestId;
+            deviceCommand.deviceId = device.id;
+            deviceCommand.method = smarthome.Constants.HttpOperation.POST;
+            deviceCommand.port = 80;
+            deviceCommand.path = "/control";
+            deviceCommand.dataType = "application/json";
+            deviceCommand.data = JSON.stringify(postData);
+
+            console.debug("HttpRequestData:", deviceCommand);
+
+            // Send command to the local device
+            return this.app.getDeviceManager()
+                .send(deviceCommand)
+                .then((result) => {
+                    response.setSuccessState(result.deviceId, {});
+                })
+                .catch((err: smarthome.IntentFlow.HandlerError) => {
+                    err.errorCode = err.errorCode || smarthome.IntentFlow.ErrorCode.INVALID_REQUEST;
+                    response.setErrorState(device.id, err.errorCode);
+                });
+        });
+
+        // Respond once all commands complete
+        return Promise.all(result)
+            .then(() => response.build());
+    };
 }
