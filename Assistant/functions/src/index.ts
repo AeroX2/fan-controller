@@ -11,7 +11,7 @@ const devices = Object.entries(config).flatMap(([deviceId, deviceConf]: [string,
 	}));
 });
 
-const app = smarthome({debug: true});
+const app = smarthome();
 
 app.onSync((body, headers) => {
 	return {

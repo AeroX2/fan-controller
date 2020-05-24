@@ -99,10 +99,6 @@ export class HomeApp {
 			console.debug("HttpRequestData:", httpRequest);
 			try {
 				const result = await this.app.getDeviceManager().send(httpRequest);
-				const state = {
-					...params,
-					online: true
-				};
 				executeResponse.setSuccessState(result.deviceId, state);
 			} catch (e) {
 				console.debug("Error: ", e);
