@@ -47,7 +47,7 @@ export class HomeApp {
         const command = request.inputs[0].payload.commands[0];
         const execution = command.execution[0];
         const params = execution.params as {
-            fanState: string,
+            fanSpeed: string,
             timerTimeSec: string,
         };
 
@@ -68,10 +68,10 @@ export class HomeApp {
                     console.error("Wrong command for device id", execution.command);
                 }
 
-                if (["off", "low", "medium", "high"].indexOf(params.fanState) === -1) {
-                    throw Error(`Unrecognised fan state: ${params.fanState}`);
+                if (["off", "low", "medium", "high"].indexOf(params.fanSpeed) === -1) {
+                    throw Error(`Unrecognised fan state: ${params.fanSpeed}`);
                 }
-                postData.command = params.fanState;
+                postData.command = params.fanSpeed;
                 break;
             case "action.devices.commands.SetToggles":
                 postData.command = "light";
