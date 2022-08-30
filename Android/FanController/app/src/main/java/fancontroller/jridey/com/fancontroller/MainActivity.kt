@@ -3,15 +3,16 @@ package fancontroller.jridey.com.fancontroller
 import android.annotation.SuppressLint
 import android.app.TimePickerDialog
 import android.content.Context
-import android.content.DialogInterface
+import android.graphics.BlendModeColorFilter
 import android.graphics.Color
 import android.graphics.PorterDuff
-import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
-import android.support.v7.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatActivity
 import android.util.Log
 import android.view.View
 import android.widget.*
+import androidx.core.graphics.BlendModeColorFilterCompat
+import androidx.core.graphics.BlendModeCompat
 
 import kotlinx.android.synthetic.main.activity_main.*
 import retrofit2.Retrofit
@@ -24,9 +25,9 @@ import java.util.*
 import kotlin.concurrent.schedule
 
 class MainActivity : AppCompatActivity() {
-    private val TAG = "MainActivity";
+    private val TAG = "MainActivity"
 
-    private lateinit var retrofit: Retrofit;
+    private lateinit var retrofit: Retrofit
     private fun getClient(url: String): Retrofit {
         if (::retrofit.isInitialized && retrofit.baseUrl().host().equals(url)) return retrofit
 
@@ -82,7 +83,7 @@ class MainActivity : AppCompatActivity() {
             }
 
             override fun onFailure(call: Call<ResponseModel>, t: Throwable) {
-                Log.e(TAG, t.message)
+                t.message?.let { Log.e(TAG, it) }
                 Toast.makeText(applicationContext, "Failed to contact fan controller", Toast.LENGTH_SHORT).show()
             }
         })
@@ -92,7 +93,7 @@ class MainActivity : AppCompatActivity() {
     @SuppressLint("SetTextI18n")
     private val openTimepicker = View.OnClickListener { view ->
         var timeSet = false
-        val dialog = TimePickerDialog(this, TimePickerDialog.OnTimeSetListener { _, hour, minute ->
+        val dialog = TimePickerDialog(this, { _, hour, minute ->
             timeout = TimeoutModel(hour, minute, 0)
             timeSet = true
 
@@ -115,7 +116,7 @@ class MainActivity : AppCompatActivity() {
                 Log.e(TAG, e.toString())
             }
         }
-        dialog.show();
+        dialog.show()
     }
 
     @SuppressLint("SetTextI18n")
@@ -136,14 +137,14 @@ class MainActivity : AppCompatActivity() {
                 override fun onResponse(call: Call<ResponseModel>, response: Response<ResponseModel>) {
 
                     if (!response.body()?.response.equals("James's Fan controller")) {
-                        Log.d(TAG, response.body()?.response)
+                        response.body()?.response?.let { Log.d(TAG, it) }
                         progressBar.isIndeterminate = false
                         errorTextView.text = "This is not a fan controller address"
                         return
                     }
 
                     fanControllers.add(urlAddress)
-                    spinnerAdapter.notifyDataSetChanged();
+                    spinnerAdapter.notifyDataSetChanged()
                     spinner.setSelection(spinner.count)
 
                     val sharedPref = getPreferences(Context.MODE_PRIVATE)
@@ -156,7 +157,7 @@ class MainActivity : AppCompatActivity() {
                 }
 
                 override fun onFailure(call: Call<ResponseModel>, t: Throwable) {
-                    Log.d(TAG, t.message)
+                    t.message?.let { Log.d(TAG, it) }
                     progressBar.isIndeterminate = false
                     errorTextView.text = "Unable to contact fan controller"
                 }
@@ -196,7 +197,8 @@ class MainActivity : AppCompatActivity() {
         findViewById<ImageButton>(R.id.add_controller).setOnClickListener(addNewController)
 
         val sharedPref = getPreferences(Context.MODE_PRIVATE)
-        fanControllers.addAll(sharedPref.getStringSet("fan_controller", HashSet()))
+        sharedPref.getStringSet("fan_controller", HashSet())
+            ?.let { fanControllers.addAll(it.toList()) }
         spinnerAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, fanControllers)
         if (fanControllers.size > 0) getClient(fanControllers.get(0))
 

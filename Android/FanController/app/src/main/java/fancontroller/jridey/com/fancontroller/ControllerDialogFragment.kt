@@ -1,6 +1,5 @@
 package fancontroller.jridey.com.fancontroller
 
-import android.annotation.SuppressLint
 import android.app.AlertDialog
 import android.app.Dialog
 import android.app.DialogFragment
@@ -9,19 +8,19 @@ import android.view.WindowManager
 import android.widget.EditText
 import android.widget.ProgressBar
 
-class ControllerDialogFragment() : DialogFragment() {
+class ControllerDialogFragment : DialogFragment() {
     var callback: ((Dialog) -> Unit)? = null
 
-    @SuppressLint("InflateParams")
+    @Deprecated("Deprecated in Java")
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         val builder = AlertDialog.Builder(activity)
-        val inflater = activity.layoutInflater;
+        val inflater = activity.layoutInflater
         val view = inflater.inflate(R.layout.dialog_controller_fragment, null)
 
         // Set the cursor to the end of the text
         val editText = view.findViewById<EditText>(R.id.controller_ip_address)
         editText.setSelection(editText.text.length)
-        editText.requestFocus();
+        editText.requestFocus()
 
         builder.setView(view)
                 .setPositiveButton(R.string.ok) { _, _ ->
@@ -41,7 +40,7 @@ class ControllerDialogFragment() : DialogFragment() {
             }
         }
 
-        alertDialog.window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE);
+        alertDialog.window?.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE)
 
         return alertDialog
     }
