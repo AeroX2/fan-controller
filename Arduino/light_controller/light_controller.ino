@@ -1,4 +1,4 @@
-#include <ESP8266WebServer.h>
+t#include <ESP8266WebServer.h>
 #include <ESP8266WiFi.h>
 #include <WiFiUdp.h>
 #include <DNSServer.h>
@@ -100,6 +100,7 @@ void setup(void) {
   server.begin();
   //Serial.printf("HTTP server started on: %d\n", 80);
 
+  ArduinoOTA.setPassword("failsafe_password");
   ArduinoOTA.setHostname("light_controller");
   ArduinoOTA.onStart([]() {
     Serial.println("Start");
