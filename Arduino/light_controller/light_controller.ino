@@ -1,4 +1,5 @@
-t#include <ESP8266WebServer.h>
+
+#include <ESP8266WebServer.h>
 #include <ESP8266WiFi.h>
 #include <WiFiUdp.h>
 #include <DNSServer.h>
@@ -13,7 +14,11 @@ t#include <ESP8266WebServer.h>
 
 #define DISCOVERY_PORT_IN  3311
 #define DISCOVERY_PORT_OUT 3312
+
+int count = 0;
+char debugging[20][100];
 char incoming_packet[256];
+
 WiFiUDP Udp;
 
 ESP8266WebServer server(80);
@@ -61,13 +66,32 @@ void process_discovery_packets() {
     }
     //Serial.printf("UDP packet contents: %s\n", incoming_packet);
 
+    IPAddress remote = Udp.remoteIP();
     if (memcmp(incoming_packet, "\xA5\xA5\xA5\xA5", 4) != 0) {
+      sprintf(debugging[count % 20], "Unknown [%d][%d][%d][%d] from %d.%d.%d.%d", 
+        incoming_packet[0],
+        incoming_packet[1],
+        incoming_packet[2],
+        incoming_packet[3],
+        remote[0],
+        remote[1],
+        remote[2],
+        remote[3]
+      );
+      count++;
       //Serial.println("Unknown UDP discovery packet data receivied");
       return;
     }
+    sprintf(debugging[count % 20], "Known reply from %d.%d.%d.%d",
+        remote[0],
+        remote[1],
+        remote[2],
+        remote[3]
+    );
+    count++;
 
     // Send back a reply, to the IP address and port we got the packet from
-    Udp.beginPacket(Udp.remoteIP(), DISCOVERY_PORT_OUT);
+    Udp.beginPacket(remote, DISCOVERY_PORT_OUT);
     Udp.write("james_light_controller");
     Udp.endPacket();
   }
@@ -94,6 +118,18 @@ void setup(void) {
 
   server.on("/", []() {
     server.send(200, "application/json", "{\"response\": \"James's Light controller\"}");
+  });
+  server.on("/debug", []() {
+    char final[20*100 + 100];
+    sprintf(final, "{\"response\": [");
+    for (int i = 0; i < count % 20; i++) {
+      if (i != 0) strcat(final, ",");
+      strcat(final, "\"");
+      strcat(final, debugging[i]);
+      strcat(final, "\"");
+    }
+    strcat(final, "]}");
+    server.send(200, "application/json", final);
   });
   server.on("/control", HTTP_POST, post_control);
 
